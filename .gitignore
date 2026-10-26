@@ -1,0 +1,11 @@
+# KHOA THAT - khong bao gio commit
+config.json
+.env
+*.key
+
+logs/
+exports/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+{
+  "_huong_dan": "Chep file nay thanh config.json roi dien khoa. config.json da bi .gitignore chan, KHONG commit.",
+  "app_key": "APIDxxxxxxxxxxxxxxxx",
+  "app_secret": "dien-ApiAppSecret-vao-day",
+  "region": "sea",
+  "language": "",
+  "timezone_offset": 7,
+  "allow_commands": false,
+  "callback": {
+    "enabled": false,
+    "host": "0.0.0.0",
+    "port": 8766,
+    "path": "/pudu/callback",
+    "callback_code": ""
+  }
+}

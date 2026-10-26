@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roboworld · App mẫu tích hợp FlashBot Max</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">ROBO<span>WORLD</span></div>
+    <div class="sub">App mẫu tích hợp FlashBot Max · PUDU Open API</div>
+  </div>
+  <div class="robot-pick">
+    <label for="robot-select">Robot</label>
+    <select id="robot-select"></select>
+  </div>
+  <div class="badges" id="badges"></div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="manage" class="on">1 · Quản lý</button>
+  <button data-tab="control">2 · Điều khiển</button>
+  <button data-tab="map">3 · Bản đồ</button>
+  <button data-tab="events">Sự kiện (callback)</button>
+  <button data-tab="settings">Cài đặt</button>
+</nav>
+
+<main>
+  <!-- ======================= 1. QUẢN LÝ ======================= -->
+  <section id="tab-manage" class="tab on">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="card">
+        <h2>Đội robot</h2>
+        <div class="muted">GetStoreList + StoreRobotList + GetRobotStatusV2 · tự làm mới 15 giây</div>
+        <div id="robot-cards" class="robot-cards"></div>
+      </div>
+      <div class="card">
+        <h2>Chi tiết robot đang chọn</h2>
+        <div class="muted">GetRobotStatusV2 · GetRealtimeMapPosition · GetDoorStatus</div>
+        <div id="robot-detail"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>Việc chạy vặt gần đây</h2>
+        <div class="muted">Errands Task List</div>
+        <div id="errand-list"></div>
+      </div>
+      <div class="card">
+        <h2>Sự cố &amp; cảnh báo 24 giờ</h2>
+        <div class="muted">Faults | Events — Query List (dữ liệu trễ khoảng 10 phút)</div>
+        <div id="error-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 2. ĐIỀU KHIỂN ======================= -->
+  <section id="tab-control" class="tab">
+    <div id="readonly-banner" class="banner warn hidden">
+      <b>Đang ở chế độ CHỈ ĐỌC.</b> Mọi nút lệnh bị khoá. Vào tab <b>Cài đặt</b> bật "Cho phép ra lệnh"
+      — khi bật, robot sẽ cử động thật.
+    </div>
+    <div class="grid2 control">
+      <div>
+        <div class="card">
+          <h2>Gọi robot tới điểm</h2>
+          <div class="muted">InitiateCallTask · CancelCallTask · CompleteCallTask</div>
+          <div class="form">
+            <label>Điểm đến <select id="call-point"></select></label>
+            <div class="row">
+              <button class="btn primary cmd" id="btn-call">Gọi robot</button>
+              <button class="btn cmd" id="btn-call-cancel">Huỷ lệnh gọi</button>
+              <button class="btn cmd" id="btn-call-done">Hoàn tất</button>
+            </div>
+            <div class="muted" id="call-task">Chưa có lệnh gọi.</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Giao việc chạy vặt (lấy hàng → giao hàng)</h2>
+          <div class="muted">ErrandTask · ErrandCommands — việc đặc trưng của FlashBot Max</div>
+          <div class="form">
+            <div class="row">
+              <label>Điểm lấy hàng <select id="errand-from"></select></label>
+              <label>Điểm giao <select id="errand-to"></select></label>
+            </div>
+            <div class="row">
+              <label>Khoang <select id="errand-hatch"><option value="">Tự chọn</option></select></label>
+              <label>Mã nhận hàng <input id="errand-code" placeholder="vd 2468" maxlength="8"></label>
+              <label>Không ai nhận thì
+                <select id="errand-back">
+                  <option value="">Theo cài đặt máy</option>
+                  <option value="RETURN">Quay về</option>
+                  <option value="BACK_START">Quay lại điểm lấy</option>
+                </select>
+              </label>
+            </div>
+            <div class="row">
+              <button class="btn primary cmd" id="btn-errand">Giao việc</button>
+              <button class="btn cmd" id="btn-errand-cancel">Huỷ việc</button>
+            </div>
+            <div class="muted" id="errand-session">Chưa có việc nào.</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Cửa khoang</h2>
+          <div class="muted">GetDoorStatus · DoorControl — robot phải online và đang rảnh</div>
+          <div id="doors-control" class="doors-control"></div>
+        </div>
+        <div class="card">
+          <h2>Lệnh khác</h2>
+          <div class="row">
+            <button class="btn cmd" id="btn-charge">Về trạm sạc</button>
+            <button class="btn cmd" id="btn-report">Báo vị trí 30 lần / 2 giây</button>
+          </div>
+          <div class="muted">OneKeyRechargeV2 · NotifyRobotReportPosition (vị trí về qua callback notifyRobotPose)</div>
+        </div>
+      </div>
+      <div>
+        <div class="card sticky">
+          <h2>Request / Response gần nhất</h2>
+          <div class="muted">Đúng gói tin server.py gửi lên PUDU (đã bỏ header ký). Dùng để đối chiếu khi bạn tự viết.</div>
+          <pre id="exchange" class="code">Chưa gửi lệnh nào.</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 3. BẢN ĐỒ ======================= -->
+  <section id="tab-map" class="tab">
+    <div class="card">
+      <div class="map-head">
+        <div>
+          <h2 id="map-title">Bản đồ</h2>
+          <div class="muted" id="map-meta">CurrentMap · GetMapDetailV2 · GetCurrentMapPoints · GetRealtimeMapPosition</div>
+        </div>
+        <div class="row">
+          <a class="btn" id="dl-png" download>Tải PNG</a>
+          <a class="btn" id="dl-json" download>Tải JSON</a>
+          <a class="btn" id="dl-svg" download>Tải SVG</a>
+          <button class="btn" id="map-fit">Vừa khung</button>
+        </div>
+      </div>
+      <div class="layers" id="layers"></div>
+      <div class="map-wrap">
+        <canvas id="map-canvas"></canvas>
+        <div class="map-coord" id="map-coord">Rê chuột lên bản đồ để xem toạ độ</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Điểm trên bản đồ</h2>
+      <div class="muted">x, y tính bằng mét · pixel = [cột, hàng] trên ảnh PNG (gốc trên-trái)</div>
+      <div id="point-table"></div>
+    </div>
+  </section>
+
+  <!-- ======================= SỰ KIỆN ======================= -->
+  <section id="tab-events" class="tab">
+    <div class="card">
+      <h2>Sự kiện PUDU đẩy về (callback)</h2>
+      <div class="muted" id="events-note"></div>
+      <div id="event-list"></div>
+    </div>
+  </section>
+
+  <!-- ======================= CÀI ĐẶT ======================= -->
+  <section id="tab-settings" class="tab">
+    <div class="card">
+      <h2>Kết nối</h2>
+      <div id="settings-info"></div>
+    </div>
+    <div class="card">
+      <h2>Quyền ra lệnh</h2>
+      <label class="switch"><input type="checkbox" id="allow-commands"> <span>Cho phép ra lệnh (robot sẽ cử động thật)</span></label>
+      <div class="muted">Mọi lệnh gửi đi được ghi vào <code>logs/commands.log</code>. Khoá API chỉ đặt trong
+        <code>config.json</code> hoặc biến môi trường — giao diện không bao giờ nhận hay hiển thị ApiAppSecret.</div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+<footer>Mã nguồn mẫu do Công ty Cổ phần Tập đoàn Roboworld cung cấp cho đối tác tích hợp · roboworld.com.vn</footer>
+<script src="app.js"></script>
+</body>
+</html>
